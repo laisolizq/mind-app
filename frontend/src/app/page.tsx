@@ -5,6 +5,7 @@ import {
   addThought,
   getThoughts,
   updateThought,
+  processNewDay,
 } from '../db/thoughts';
 import type { Thought, Timing } from '../db/db';
 
@@ -64,7 +65,12 @@ export default function Home() {
   }
 
   useEffect(() => {
-    loadThoughts();
+    async function initializeApp() {
+      await processNewDay();
+      await loadThoughts();
+    }
+
+    initializeApp();
   }, []);
 
   const pendingThoughts = thoughts.filter(

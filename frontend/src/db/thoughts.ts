@@ -41,12 +41,23 @@ function getMindDay(date: Date) {
 
 export async function processNewDay() {
   const now = new Date();
-
   const currentMindDay = getMindDay(now);
 
   const lastReset = await db.settings.get('lastDailyReset');
 
-  if (lastReset?.value === currentMindDay) {
+  // First time using the app:
+  // just remember the current mind day.
+  if (!lastReset) {
+    await db.settings.put({
+      key: 'lastDailyReset',
+      value: currentMindDay,
+    });
+
+    return;
+  }
+
+  // Nothing to do if we already processed this mind day.
+  if (lastReset.value === currentMindDay) {
     return;
   }
 
@@ -57,11 +68,7 @@ export async function processNewDay() {
       continue;
     }
 
-    if (thought.status === 'completed') {
-      await db.thoughts.update(thought.id!, {
-        status: 'completed',
-      });
-    } else if (thought.status === 'active') {
+    if (thought.status === 'active') {
       await db.thoughts.update(thought.id!, {
         status: 'pending',
       });
