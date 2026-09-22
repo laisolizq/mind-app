@@ -454,8 +454,12 @@ export default function Home() {
             <div className="w-10" />
 
             <div className="text-center">
-              <div className="mb-3 text-2xl text-[#9b8c82]">
-                ✦
+              <div className="mb-3 flex w-full justify-center">
+                <img
+                  src="/mind-app/icon.png"
+                  alt=""
+                  className="h-6 w-6"
+                />
               </div>
 
               <h1 className="text-4xl font-semibold tracking-tight text-[#35322f]">
