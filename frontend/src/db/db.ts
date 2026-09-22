@@ -9,6 +9,7 @@ export interface Thought {
   timing: Timing;
   status: ThoughtStatus;
   createdAt: Date;
+  recurrenceId?: number;
 }
 
 export interface AppSetting {
@@ -16,9 +17,16 @@ export interface AppSetting {
   value: string;
 }
 
+export interface Recurrence {
+  id?: number;
+  name: string;
+  days: number[];
+}
+
 export class MindDatabase extends Dexie {
   thoughts!: Table<Thought, number>;
   settings!: Table<AppSetting, string>;
+  recurrences!: Table<Recurrence, number>;
 
   constructor() {
     super('mind-app');
@@ -44,6 +52,12 @@ export class MindDatabase extends Dexie {
             delete thought.completed;
           });
       });
+
+    this.version(3).stores({
+      thoughts: '++id, timing, status, createdAt, recurrenceId',
+      settings: 'key',
+      recurrences: '++id, name',
+    });
   }
 }
 

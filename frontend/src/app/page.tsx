@@ -2,12 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import {
+  addRecurrence,
   addThought,
+  deleteRecurrence,
+  getRecurrences,
   getThoughts,
-  updateThought,
   processNewDay,
+  updateThought,
+  deleteThought,
 } from '../db/thoughts';
-import type { Thought, Timing } from '../db/db';
+import InstallButton from './InstallButton';
+import type {
+  Recurrence,
+  Thought,
+  Timing,
+} from '../db/db';
 
 const sections: { timing: Timing; title: string }[] = [
   { timing: 'today', title: 'Today' },
@@ -15,15 +24,46 @@ const sections: { timing: Timing; title: string }[] = [
   { timing: 'later', title: 'Later' },
 ];
 
+const weekdays = [
+  { value: 1, label: 'M', name: 'Monday' },
+  { value: 2, label: 'T', name: 'Tuesday' },
+  { value: 3, label: 'W', name: 'Wednesday' },
+  { value: 4, label: 'T', name: 'Thursday' },
+  { value: 5, label: 'F', name: 'Friday' },
+  { value: 6, label: 'S', name: 'Saturday' },
+  { value: 0, label: 'S', name: 'Sunday' },
+];
+
 export default function Home() {
   const [thoughts, setThoughts] = useState<Thought[]>([]);
+  const [recurrences, setRecurrences] = useState<Recurrence[]>([]);
+
   const [text, setText] = useState('');
   const [timing, setTiming] = useState<Timing>('today');
+
   const [showInbox, setShowInbox] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showRecurrences, setShowRecurrences] = useState(false);
+
+  const [newRecurrenceName, setNewRecurrenceName] =
+    useState('');
+  const [newRecurrenceDays, setNewRecurrenceDays] =
+    useState<number[]>([]);
 
   async function loadThoughts() {
     const savedThoughts = await getThoughts();
     setThoughts(savedThoughts);
+  }
+
+  async function loadRecurrences() {
+    const savedRecurrences = await getRecurrences();
+    setRecurrences(savedRecurrences);
+  }
+
+  async function initializeApp() {
+    await processNewDay();
+    await loadThoughts();
+    await loadRecurrences();
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -48,7 +88,10 @@ export default function Home() {
     await loadThoughts();
   }
 
-  async function toggleThought(id: number, completed: boolean) {
+  async function toggleThought(
+    id: number,
+    completed: boolean,
+  ) {
     await updateThought(id, {
       status: completed ? 'completed' : 'active',
     });
@@ -64,18 +107,212 @@ export default function Home() {
     await loadThoughts();
   }
 
-  useEffect(() => {
-    async function initializeApp() {
-      await processNewDay();
-      await loadThoughts();
+  async function handleAddRecurrence(
+    event: React.FormEvent,
+  ) {
+    event.preventDefault();
+
+    if (
+      !newRecurrenceName.trim() ||
+      newRecurrenceDays.length === 0
+    ) {
+      return;
     }
 
+    await addRecurrence(
+      newRecurrenceName.trim(),
+      newRecurrenceDays,
+    );
+
+    setNewRecurrenceName('');
+    setNewRecurrenceDays([]);
+
+    await loadRecurrences();
+  }
+
+  function toggleRecurrenceDay(day: number) {
+    setNewRecurrenceDays((current) =>
+      current.includes(day)
+        ? current.filter((item) => item !== day)
+        : [...current, day],
+    );
+  }
+
+  async function handleDeleteThought(id: number) {
+    await deleteThought(id);
+    await loadThoughts();
+  }
+
+  async function handleDeleteRecurrence(id: number) {
+    await deleteRecurrence(id);
+    await loadRecurrences();
+    await loadThoughts();
+  }
+
+  useEffect(() => {
     initializeApp();
   }, []);
 
   const pendingThoughts = thoughts.filter(
     (thought) => thought.status === 'pending',
   );
+
+  if (showRecurrences) {
+    return (
+      <main className="min-h-screen bg-[#f8f6f2] px-5 py-8 text-[#3d3a36]">
+        <div className="mx-auto w-full max-w-lg">
+          <header className="mb-10 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setShowRecurrences(false)}
+              className="flex items-center gap-2 rounded-xl px-2 py-2 text-sm text-[#817a73] transition hover:bg-[#eeeae4]"
+            >
+              <span className="text-lg">←</span>
+              <span>Back</span>
+            </button>
+
+            <h1 className="text-xl font-semibold text-[#35322f]">
+              Recurrences
+            </h1>
+
+            <div className="w-16" />
+          </header>
+
+          <div className="mb-8">
+            <p className="text-sm leading-relaxed text-[#8b857f]">
+              Things that appear automatically on
+              <br />
+              selected days of the week.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {recurrences.map((recurrence) => (
+              <div
+                key={recurrence.id}
+                className="rounded-2xl border border-[#ebe6df] bg-white px-4 py-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="break-words text-[15px] font-medium text-[#4c4844]">
+                      {recurrence.name}
+                    </p>
+
+                    <div className="mt-3 flex gap-1.5">
+                      {weekdays.map((day) => {
+                        const selected =
+                          recurrence.days.includes(day.value);
+
+                        return (
+                          <span
+                            key={day.value}
+                            title={day.name}
+                            className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] ${
+                              selected
+                                ? 'bg-[#e5eee5] font-medium text-[#718571]'
+                                : 'bg-[#f5f1ec] text-[#b3aca5]'
+                            }`}
+                          >
+                            {day.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDeleteRecurrence(
+                        recurrence.id!,
+                      )
+                    }
+                    className="shrink-0 rounded-lg px-2 py-2 text-xs text-[#aaa29a] transition hover:bg-[#f5f1ec] hover:text-[#716a63]"
+                    aria-label={`Delete ${recurrence.name}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {recurrences.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-[#ded8d1] px-5 py-8 text-center">
+                <p className="text-sm text-[#b0a9a2]">
+                  No recurrences yet.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <form
+            onSubmit={handleAddRecurrence}
+            className="mt-8 rounded-2xl border border-[#e8e2da] bg-white/80 p-4 shadow-sm"
+          >
+            <h2 className="mb-4 text-sm font-medium text-[#5d5751]">
+              Add recurrence
+            </h2>
+
+            <input
+              value={newRecurrenceName}
+              onChange={(event) =>
+                setNewRecurrenceName(event.target.value)
+              }
+              placeholder="e.g. English"
+              className="w-full rounded-xl border border-[#e8e2da] bg-[#faf8f5] px-3 py-3 text-base text-[#3d3a36] outline-none placeholder:text-[#b5aea7]"
+            />
+
+            <p className="mt-5 mb-3 text-xs font-medium uppercase tracking-[0.15em] text-[#9a928a]">
+              Days
+            </p>
+
+            <div className="grid grid-cols-7 gap-2">
+              {weekdays.map((day) => {
+                const selected =
+                  newRecurrenceDays.includes(day.value);
+
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() =>
+                      toggleRecurrenceDay(day.value)
+                    }
+                    className={`flex aspect-square items-center justify-center rounded-xl border text-sm transition ${
+                      selected
+                        ? 'border-[#9aaa9a] bg-[#e5eee5] text-[#718571]'
+                        : 'border-[#e8e2da] bg-[#faf8f5] text-[#aaa29a] hover:bg-[#f2eee9]'
+                    }`}
+                    aria-label={day.name}
+                    aria-pressed={selected}
+                  >
+                    {selected ? '✓' : day.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="submit"
+              disabled={
+                !newRecurrenceName.trim() ||
+                newRecurrenceDays.length === 0
+              }
+              className="mt-5 w-full rounded-xl bg-[#5f5953] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#514c47] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Add recurrence
+            </button>
+          </form>
+
+          <footer className="mt-14 pb-4 text-center">
+            <p className="text-xs text-[#b5aea7]">
+              Small things, repeated gently ♡
+            </p>
+          </footer>
+        </div>
+      </main>
+    );
+  }
 
   if (showInbox) {
     return (
@@ -116,7 +353,9 @@ export default function Home() {
 
           {pendingThoughts.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#ded8d1] px-5 py-10 text-center">
-              <div className="mb-3 text-2xl text-[#b5aea7]">♡</div>
+              <div className="mb-3 text-2xl text-[#b5aea7]">
+                ♡
+              </div>
 
               <p className="text-sm text-[#9f9891]">
                 Your inbox is empty.
@@ -145,7 +384,10 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() =>
-                        moveThought(thought.id!, 'today')
+                        moveThought(
+                          thought.id!,
+                          'today',
+                        )
                       }
                       className="rounded-lg bg-[#f4f0eb] px-3 py-2 text-xs text-[#716a63] transition hover:bg-[#ebe5de]"
                     >
@@ -155,7 +397,10 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() =>
-                        moveThought(thought.id!, 'soon')
+                        moveThought(
+                          thought.id!,
+                          'soon',
+                        )
                       }
                       className="rounded-lg bg-[#f4f0eb] px-3 py-2 text-xs text-[#716a63] transition hover:bg-[#ebe5de]"
                     >
@@ -165,7 +410,10 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() =>
-                        moveThought(thought.id!, 'later')
+                        moveThought(
+                          thought.id!,
+                          'later',
+                        )
                       }
                       className="rounded-lg bg-[#f4f0eb] px-3 py-2 text-xs text-[#716a63] transition hover:bg-[#ebe5de]"
                     >
@@ -199,21 +447,49 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f6f2] px-5 py-8 text-[#3d3a36]">
+    <main className="min-h-screen bg-[#F2DDE3] px-5 py-8 text-[#3d3a36]">
       <div className="mx-auto w-full max-w-lg">
         <header className="mb-10">
-          <div className="text-center">
-            <div className="mb-3 text-2xl text-[#9b8c82]">✦</div>
+          <div className="flex items-start justify-between">
+            <div className="w-10" />
 
-            <h1 className="text-4xl font-semibold tracking-tight text-[#35322f]">
-              mind
-            </h1>
+            <div className="text-center">
+              <div className="mb-3 text-2xl text-[#9b8c82]">
+                ✦
+              </div>
 
-            <p className="mt-2 text-sm leading-relaxed text-[#8b857f]">
-              Get it out of your head.
-              <br />
-              Decide when to care about it.
-            </p>
+              <h1 className="text-4xl font-semibold tracking-tight text-[#35322f]">
+                mind
+              </h1>
+            </div>
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowMenu((current) => !current)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-xl text-[#918981] transition hover:bg-[#eeeae4]"
+                aria-label="Open menu"
+                aria-expanded={showMenu}
+              >
+                ⋯
+              </button>
+
+              {showMenu && (
+                <div className="absolute right-0 top-11 z-10 w-44 rounded-xl border border-[#e8e2da] bg-white p-1.5 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowRecurrences(true);
+                    }}
+                    className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[#5f5953] transition hover:bg-[#f5f1ec]"
+                  >
+                    ↻ Recurrences
+                  </button>
+                  <InstallButton />
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -224,7 +500,9 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <input
               value={text}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) =>
+                setText(event.target.value)
+              }
               placeholder="What's on your mind?"
               className="min-w-0 flex-1 bg-transparent px-1 py-2 text-base text-[#3d3a36] outline-none placeholder:text-[#b5aea7]"
             />
@@ -355,6 +633,15 @@ export default function Home() {
                           >
                             {thought.text}
                           </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteThought(thought.id!)}
+                            className="shrink-0 rounded-lg px-2 py-1 text-sm text-[#b8b0a8] transition hover:bg-[#f5f1ec] hover:text-[#8f8379]"
+                            aria-label={`Delete ${thought.text}`}
+                          >
+                            ×
+                          </button>
 
                           <button
                             type="button"
