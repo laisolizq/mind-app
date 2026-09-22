@@ -8,10 +8,16 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'mind',
     description: 'Get it out of your head.',
     start_url: '/mind-app/',
+    scope: '/mind-app/',
     display: 'standalone',
-    background_color: '#F2DDE3',
-    theme_color: '#F2DDE3',
+    background_color: '#f8f6f2',
+    theme_color: '#E8DFF2',
     icons: [
+      {
+        src: '/mind-app/icon-192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
       {
         src: '/mind-app/icon.png',
         sizes: '512x512',
