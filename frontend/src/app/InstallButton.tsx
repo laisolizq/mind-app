@@ -39,8 +39,12 @@ export default function InstallButton() {
   }
 
   if (!installPrompt) {
-    return null;
-  }
+    return (
+        <div className="px-3 py-2.5 text-xs leading-relaxed text-[#aaa29a]">
+        Install option not available yet
+        </div>
+    );
+ }
 
   return (
     <button
