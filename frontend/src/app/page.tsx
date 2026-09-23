@@ -44,6 +44,7 @@ export default function Home() {
   const [showInbox, setShowInbox] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showRecurrences, setShowRecurrences] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const [newRecurrenceName, setNewRecurrenceName] =
     useState('');
@@ -156,6 +157,87 @@ export default function Home() {
   const pendingThoughts = thoughts.filter(
     (thought) => thought.status === 'pending',
   );
+
+  const archivedThoughts = thoughts
+    .filter((thought) => thought.status === 'archived')
+    .sort((a, b) => {
+      const dateA = a.archivedAt?.getTime() ?? 0;
+      const dateB = b.archivedAt?.getTime() ?? 0;
+
+      return dateB - dateA;
+  });
+
+  if (showHistory) {
+    return (
+      <main className="min-h-screen bg-[#f8f6f2] px-5 py-8 text-[#3d3a36]">
+        <div className="mx-auto w-full max-w-lg">
+          <header className="mb-10 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setShowHistory(false)}
+              className="flex items-center gap-2 rounded-xl px-2 py-2 text-sm text-[#817a73] transition hover:bg-[#eeeae4]"
+            >
+              <span className="text-lg">←</span>
+              <span>Back</span>
+            </button>
+
+            <h1 className="text-xl font-semibold text-[#35322f]">
+              History
+            </h1>
+
+            <div className="w-16" />
+          </header>
+
+          <div className="mb-8 text-center">
+            <p className="text-sm leading-relaxed text-[#8b857f]">
+              Things you completed recently.
+              <br />
+              They disappear after 10 days.
+            </p>
+          </div>
+
+          {archivedThoughts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#ded8d1] px-5 py-10 text-center">
+              <div className="mb-3 text-2xl text-[#b5aea7]">
+                ✓
+              </div>
+
+              <p className="text-sm text-[#9f9891]">
+                Nothing here yet.
+              </p>
+
+              <p className="mt-1 text-xs text-[#b5aea7]">
+                Completed thoughts will appear here.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {archivedThoughts.map((thought) => (
+                <li
+                  key={thought.id}
+                  className="flex items-center gap-3 rounded-2xl border border-[#ebe6df] bg-white px-4 py-4 shadow-sm"
+                >
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#8fa58f] text-sm text-white">
+                    ✓
+                  </div>
+
+                  <span className="min-w-0 flex-1 break-words text-[15px] leading-relaxed text-[#8f8982]">
+                    {thought.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <footer className="mt-14 pb-4 text-center">
+            <p className="text-xs text-[#b5aea7]">
+              Small things, done gently ♡
+            </p>
+          </footer>
+        </div>
+      </main>
+    );
+  }
 
   if (showRecurrences) {
     return (
@@ -490,6 +572,16 @@ export default function Home() {
                   >
                     ↻ Recurrences
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowHistory(true);
+                    }}
+                    className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-[#5f5953] transition hover:bg-[#f5f1ec]"
+                  >
+                    ▣ History
+                  </button>
                   <InstallButton />
                 </div>
               )}
@@ -572,7 +664,8 @@ export default function Home() {
             const sectionThoughts = thoughts.filter(
               (thought) =>
                 thought.timing === section.timing &&
-                thought.status !== 'pending',
+                thought.status !== 'pending' &&
+                thought.status !== 'archived',
             );
 
             return (
@@ -654,19 +747,19 @@ export default function Home() {
                               if (section.timing === 'today') {
                                 moveThought(
                                   thought.id!,
-                                  'soon',
+                                  'later',
                                 );
                               } else if (
                                 section.timing === 'soon'
                               ) {
                                 moveThought(
                                   thought.id!,
-                                  'later',
+                                  'today',
                                 );
                               } else {
                                 moveThought(
                                   thought.id!,
-                                  'today',
+                                  'soon',
                                 );
                               }
                             }}

@@ -22,7 +22,9 @@ export async function getThoughts() {
 
 export async function updateThought(
   id: number,
-  changes: Partial<Pick<Thought, 'text' | 'timing' | 'status'>>,
+  changes: Partial<
+    Pick<Thought, 'text' | 'timing' | 'status' | 'archivedAt'>
+  >,
 ) {
   return db.thoughts.update(id, changes);
 }
@@ -140,8 +142,26 @@ export async function processNewDay() {
       await db.thoughts.update(thought.id!, {
         status: 'pending',
       });
+    } else if (thought.status === 'completed') {
+      await db.thoughts.update(thought.id!, {
+        status: 'archived',
+        archivedAt: now,
+      });
     }
   }
+
+  // Remove archived thoughts older than 10 days.
+  const tenDaysAgo = new Date(now);
+  tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+
+  await db.thoughts
+    .filter(
+      (thought) =>
+        thought.status === 'archived' &&
+        thought.archivedAt !== undefined &&
+        thought.archivedAt < tenDaysAgo,
+    )
+    .delete();
 
   await db.settings.put({
     key: 'lastDailyReset',

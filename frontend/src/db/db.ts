@@ -1,7 +1,11 @@
 import Dexie, { type Table } from 'dexie';
 
 export type Timing = 'today' | 'soon' | 'later';
-export type ThoughtStatus = 'active' | 'completed' | 'pending';
+export type ThoughtStatus =
+  | 'active'
+  | 'completed'
+  | 'pending'
+  | 'archived';
 
 export interface Thought {
   id?: number;
@@ -9,6 +13,7 @@ export interface Thought {
   timing: Timing;
   status: ThoughtStatus;
   createdAt: Date;
+  archivedAt?: Date;
   recurrenceId?: number;
 }
 
