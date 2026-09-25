@@ -661,12 +661,24 @@ export default function Home() {
 
         <div className="space-y-9">
           {sections.map((section) => {
-            const sectionThoughts = thoughts.filter(
-              (thought) =>
-                thought.timing === section.timing &&
-                thought.status !== 'pending' &&
-                thought.status !== 'archived',
-            );
+            const sectionThoughts = thoughts
+              .filter(
+                (thought) =>
+                  thought.timing === section.timing &&
+                  thought.status !== 'pending' &&
+                  thought.status !== 'archived',
+              )
+              .sort((a, b) => {
+                if (a.status === 'completed' && b.status !== 'completed') {
+                  return 1;
+                }
+
+                if (a.status !== 'completed' && b.status === 'completed') {
+                  return -1;
+                }
+
+                return 0;
+              });
 
             return (
               <section key={section.timing}>
