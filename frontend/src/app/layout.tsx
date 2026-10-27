@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "mind",
   description: "Get it out of your head.",
   appleWebApp: { capable: true, title: "mind", statusBarStyle: "default" },
-  icons: { apple: "/mind-app/icons/apple-touch-icon.png" },
+  icons: { apple: "/mind-app/icons/apple-touch-icon.png?v=2" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
