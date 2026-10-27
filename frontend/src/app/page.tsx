@@ -560,8 +560,8 @@ export default function Home() {
                 ⋯
               </button>
 
-              {showMenu && (
-                <div className="absolute right-0 top-11 z-10 w-44 rounded-xl border border-[#e8e2da] bg-white p-1.5 shadow-lg">
+              {/* Keep the installation listener mounted even while the menu is closed. */}
+                <div hidden={!showMenu} className="absolute right-0 top-11 z-10 w-60 rounded-xl border border-[#e8e2da] bg-white p-1.5 shadow-lg">
                   <button
                     type="button"
                     onClick={() => {
@@ -584,7 +584,6 @@ export default function Home() {
                   </button>
                   <InstallButton />
                 </div>
-              )}
             </div>
           </div>
         </header>
